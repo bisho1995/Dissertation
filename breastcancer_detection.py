@@ -14,21 +14,22 @@ First up is importing the packages you'll need. It's good practice to keep all t
 
 # We need pillow version of 5.3.0
 # We will uninstall the older version first
-!pip uninstall -y Pillow
+# !pip uninstall -y Pillow
 # Install the new one
-!pip install Pillow==5.3.0
+# !pip install Pillow==5.3.0
 # Let's verify the version
 # This should print 5.3.0. If it doesn't, then restart your runtime:
 # Menu > Runtime > Restart Runtime
-!pip install image
-!pip3 install http://download.pytorch.org/whl/cu80/torch-0.4.0-cp36-cp36m-linux_x86_64.whl
-!pip3 install torchvision
+# !pip install image
+# !pip3 install http://download.pytorch.org/whl/cu80/torch-0.4.0-cp36-cp36m-linux_x86_64.whl
+# !pip3 install torchvision
 import PIL
+
 print(PIL.PILLOW_VERSION)
 
 # We will verify that GPU is enabled for this notebook
 # Following should print: CUDA is available!  Training on GPU ...
-# if it prints otherwise, then you need to enable GPU: 
+# if it prints otherwise, then you need to enable GPU:
 # From Menu > Runtime > Change Runtime Type > Hardware Accelerator > GPU
 # %matplotlib inline
 # %config InlineBackend.figure_format = 'retina'
@@ -50,6 +51,7 @@ import copy
 import json
 import os
 from os.path import exists
+
 # check if CUDA is available
 train_on_gpu = torch.cuda.is_available()
 
@@ -58,7 +60,6 @@ if not train_on_gpu:
 else:
     print('CUDA is available!  Training on GPU ...')
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-print(device)
 
 """# Load the data
 
@@ -71,12 +72,12 @@ The pre-trained networks available from 'torchvision' were trained on the ImageN
 
 # I made a smaller version of the dataset, original one has classes and subclasses.
 # I just wanted to keep 2 classes: Benign and Malignant.
-#Download and unzip de folder
-!gdown https://drive.google.com/uc?id=1r6YNGwijUHawsRHKy8qQk12FW-VQXw4p
-!unzip -qq b_cancer_data2.zip
+# Download and unzip de folder
+# !gdown https://drive.google.com/uc?id=1r6YNGwijUHawsRHKy8qQk12FW-VQXw4p
+# !unzip -qq b_cancer_data2.zip
 
-#Organizing the dataset
-data_dir = '/b_cancer_data2'
+# Organizing the dataset
+data_dir = 'data'
 train_dir = data_dir + '/train'
 valid_dir = data_dir + '/valid'
 nThreads = 4
@@ -93,13 +94,15 @@ import json
 with open('cate.json', 'r') as f:
     cat_to_name = json.load(f)
 
+print("cat_to_name", cat_to_name)
+
 # Define your transforms for the training and validation sets
 # Data augmentation and normalization for training
 data_transforms = {
     'train': transforms.Compose([
         transforms.RandomRotation(30),
         transforms.RandomResizedCrop(224),
-        #transforms.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4),
+        # transforms.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4),
         transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
@@ -113,16 +116,18 @@ data_transforms = {
 }
 
 # Load the datasets with ImageFolder
-
-data_dir = 'b_cancer_data2'
+print("path =>", os.path.join(data_dir, "train"))
 image_datasets = {x: datasets.ImageFolder(os.path.join(data_dir, x),
                                           data_transforms[x])
                   for x in ['train', 'valid']}
 
+print("image_datasets", image_datasets)
+
 # Using the image datasets and the trainforms, define the dataloaders
-dataloaders = {x: torch.utils.data.DataLoader(image_datasets[x], batch_size=batch_size,
-                                             shuffle=True, num_workers=4)
-              for x in ['train', 'valid']}
+dataloaders = {
+    x: torch.utils.data.DataLoader(image_datasets[x], batch_size=batch_size,
+                                   shuffle=True, num_workers=0)
+    for x in ['train', 'valid']}
 
 dataset_sizes = {x: len(image_datasets[x]) for x in ['train', 'valid']}
 
@@ -149,8 +154,8 @@ model = models.resnet152(pretrained=True)
 for param in model.parameters():
     param.requires_grad = False
 
-#Let's check the model architecture:
-    print(model)
+    # Let's check the model architecture:
+    # print(model)
 
 # 2. Define a new, untrained feed-forward network as a classifier, using ReLU activations
 
@@ -159,28 +164,28 @@ for param in model.parameters():
 
 from collections import OrderedDict
 
-
 # Creating the classifier ordered dictionary first
 
 classifier = nn.Sequential(OrderedDict([
-                          ('fc1', nn.Linear(2048, 512)),
-                          ('relu', nn.ReLU()),
-                          ('dropout1', nn.Dropout(p=0.5)),
-                          ('fc2', nn.Linear(512, 2)),
-                          ('output', nn.LogSoftmax(dim=1))
-                          ]))
+    ('fc1', nn.Linear(2048, 512)),
+    ('relu', nn.ReLU()),
+    ('dropout1', nn.Dropout(p=0.5)),
+    ('fc2', nn.Linear(512, 2)),
+    ('output', nn.LogSoftmax(dim=1))
+]))
 
 # Replacing the pretrained model classifier with our classifier
 model.fc = classifier
 
-#Function to train the model
+
+# Function to train the model
 def train_model(model, criterion, optimizer, scheduler, num_epochs=10):
     since = time.time()
 
     best_model_wts = copy.deepcopy(model.state_dict())
     best_acc = 0.0
 
-    for epoch in range(1, num_epochs+1):
+    for epoch in range(1, num_epochs + 1):
         print('Epoch {}/{}'.format(epoch, num_epochs))
         print('-' * 10)
 
@@ -190,7 +195,7 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs=10):
                 scheduler.step()
                 model.train()  # Set model to training mode
             else:
-                model.eval()   # Set model to evaluate mode
+                model.eval()  # Set model to evaluate mode
 
             running_loss = 0.0
             running_corrects = 0
@@ -240,42 +245,46 @@ def train_model(model, criterion, optimizer, scheduler, num_epochs=10):
     model.load_state_dict(best_model_wts)
     return model
 
+
 # Train a model with a pre-trained network
 num_epochs = 10
 if use_gpu:
-    print ("Using GPU: "+ str(use_gpu))
+    print("Using GPU: " + str(use_gpu))
     model = model.cuda()
 
 # NLLLoss because our output is LogSoftmax
 criterion = nn.NLLLoss()
 
 # Adam optimizer with a learning rate
-#optimizer = optim.Adam(model.fc.parameters(), lr=0.005)
-optimizer = optim.SGD(model.fc.parameters(), lr = .0006, momentum=0.9)
+# optimizer = optim.Adam(model.fc.parameters(), lr=0.005)
+optimizer = optim.SGD(model.fc.parameters(), lr=.0006, momentum=0.9)
 # Decay LR by a factor of 0.1 every 5 epochs
 exp_lr_scheduler = lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.1)
 
+model_ft = train_model(model, criterion, optimizer, exp_lr_scheduler,
+                       num_epochs=4)
 
-model_ft = train_model(model, criterion, optimizer, exp_lr_scheduler, num_epochs=10)
 
 # Do validation on the test set
 def test(model, dataloaders, device):
-  model.eval()
-  accuracy = 0
-  
-  model.to(device)
-    
-  for images, labels in dataloaders['valid']:
-    images = Variable(images)
-    labels = Variable(labels)
-    images, labels = images.to(device), labels.to(device)
-      
-    output = model.forward(images)
-    ps = torch.exp(output)
-    equality = (labels.data == ps.max(1)[1])
-    accuracy += equality.type_as(torch.FloatTensor()).mean()
-      
-    print("Testing Accuracy: {:.3f}".format(accuracy/len(dataloaders['valid'])))
+    model.eval()
+    accuracy = 0
+
+    model.to(device)
+
+    for images, labels in dataloaders['valid']:
+        images = Variable(images)
+        labels = Variable(labels)
+        images, labels = images.to(device), labels.to(device)
+
+        output = model.forward(images)
+        ps = torch.exp(output)
+        equality = (labels.data == ps.max(1)[1])
+        accuracy += equality.type_as(torch.FloatTensor()).mean()
+
+        print("Testing Accuracy: {:.3f}".format(
+            accuracy / len(dataloaders['valid'])))
+
 
 test(model, dataloaders, device)
 
@@ -288,18 +297,18 @@ Now that the network is trained,  we will save the model so we can load it later
 Remember that we'll want to completely rebuild the model later so we can use it for inference. Make sure to include any information you need in the checkpoint. If you want to load the model and keep training, you'll want to save the number of epochs as well as the optimizer state, `optimizer.state_dict`. You'll likely want to use this trained model in the next part of the project, so best to save it now.
 """
 
-# Save the checkpoint 
+# Save the checkpoint
 
 model.class_to_idx = dataloaders['train'].dataset.class_to_idx
 model.epochs = num_epochs
 checkpoint = {'input_size': [3, 224, 224],
-                 'batch_size': dataloaders['train'].batch_size,
-                  'output_size': 2,
-                  'state_dict': model.state_dict(),
-                  'data_transforms': data_transforms,
-                  'optimizer_dict':optimizer.state_dict(),
-                  'class_to_idx': model.class_to_idx,
-                  'epoch': model.epochs}
+              'batch_size': dataloaders['train'].batch_size,
+              'output_size': 2,
+              'state_dict': model.state_dict(),
+              'data_transforms': data_transforms,
+              'optimizer_dict': optimizer.state_dict(),
+              'class_to_idx': model.class_to_idx,
+              'epoch': model.epochs}
 torch.save(checkpoint, '8960_checkpoint.pth')
 
 """# Loading the checkpoint
@@ -307,94 +316,98 @@ torch.save(checkpoint, '8960_checkpoint.pth')
 At this point it's good to write a function that can load a checkpoint and rebuild the model. That way you can come back to this project and keep working on it without having to retrain the network.
 """
 
-#Load the trained model from here:
-!gdown https://drive.google.com/uc?id=16RqsH1oCROSJiCR0f2gWCs4Xaz3JRTw9
-#https://drive.google.com/open?id=16RqsH1oCROSJiCR0f2gWCs4Xaz3JRTw9
+
+# Load the trained model from here:
+# !gdown https://drive.google.com/uc?id=16RqsH1oCROSJiCR0f2gWCs4Xaz3JRTw9
+# https://drive.google.com/open?id=16RqsH1oCROSJiCR0f2gWCs4Xaz3JRTw9
 
 # Write a function that loads a checkpoint and rebuilds the model
 
 def load_checkpoint(filepath):
     checkpoint = torch.load(filepath)
     model = models.resnet152()
-    
+
     # Our input_size matches the in_features of pretrained model
     input_size = 2048
     output_size = 2
-    
-    classifier = nn.Sequential(OrderedDict([
-                          ('fc1', nn.Linear(2048, 512)),
-                          ('relu', nn.ReLU()),
-                          #('dropout1', nn.Dropout(p=0.2)),
-                          ('fc2', nn.Linear(512, 2)),
-                          ('output', nn.LogSoftmax(dim=1))
-                          ]))
 
-# Replacing the pretrained model classifier with our classifier
+    classifier = nn.Sequential(OrderedDict([
+        ('fc1', nn.Linear(2048, 512)),
+        ('relu', nn.ReLU()),
+        # ('dropout1', nn.Dropout(p=0.2)),
+        ('fc2', nn.Linear(512, 2)),
+        ('output', nn.LogSoftmax(dim=1))
+    ]))
+
+    # Replacing the pretrained model classifier with our classifier
     model.fc = classifier
-    
-    
+
     model.load_state_dict(checkpoint['state_dict'])
-    
+
     return model, checkpoint['class_to_idx']
+
 
 # Get index to class mapping
 loaded_model, class_to_idx = load_checkpoint('8960_checkpoint.pth')
-idx_to_class = { v : k for k,v in class_to_idx.items()}
+idx_to_class = {v: k for k, v in class_to_idx.items()}
 
 """# Inference for classification
 
 Now you'll write a function to use a trained network for inference. That is, you'll pass an image into the network and predict the class. Write a function called `predict` that takes an image and a model, then returns the top $K$ most likely classes along with the probabilities. It should look like
 """
 
+
 def process_image(image):
     ''' Scales, crops, and normalizes a PIL image for a PyTorch model,
         returns an Numpy array
     '''
-    
+
     # Process a PIL image for use in a PyTorch model
 
     size = 256, 256
     image.thumbnail(size, Image.ANTIALIAS)
     image = image.crop((128 - 112, 128 - 112, 128 + 112, 128 + 112))
     npImage = np.array(image)
-    npImage = npImage/255.
-        
-    imgA = npImage[:,:,0]
-    imgB = npImage[:,:,1]
-    imgC = npImage[:,:,2]
-    
-    imgA = (imgA - 0.485)/(0.229) 
-    imgB = (imgB - 0.456)/(0.224)
-    imgC = (imgC - 0.406)/(0.225)
-        
-    npImage[:,:,0] = imgA
-    npImage[:,:,1] = imgB
-    npImage[:,:,2] = imgC
-    
-    npImage = np.transpose(npImage, (2,0,1))
-    
+    npImage = npImage / 255.
+
+    imgA = npImage[:, :, 0]
+    imgB = npImage[:, :, 1]
+    imgC = npImage[:, :, 2]
+
+    imgA = (imgA - 0.485) / (0.229)
+    imgB = (imgB - 0.456) / (0.224)
+    imgC = (imgC - 0.406) / (0.225)
+
+    npImage[:, :, 0] = imgA
+    npImage[:, :, 1] = imgB
+    npImage[:, :, 2] = imgC
+
+    npImage = np.transpose(npImage, (2, 0, 1))
+
     return npImage
+
 
 def imshow(image, ax=None, title=None):
     """Imshow for Tensor."""
     if ax is None:
         fig, ax = plt.subplots()
-    
+
     # PyTorch tensors assume the color channel is the first dimension
     # but matplotlib assumes is the third dimension
     image = image.numpy().transpose((1, 2, 0))
-    
+
     # Undo preprocessing
     mean = np.array([0.485, 0.456, 0.406])
     std = np.array([0.229, 0.224, 0.225])
     image = std * image + mean
-    
+
     # Image needs to be clipped between 0 and 1 or it looks like noise when displayed
     image = np.clip(image, 0, 1)
-    
+
     ax.imshow(image)
-    
+
     return ax
+
 
 """# Class Prediction
 
@@ -412,64 +425,31 @@ print(classes)
 > ['70', '3', '45', '62', '55']
 """
 
+
 def predict(image_path, model, topk=2):
     ''' Predict the class (or classes) of an image using a trained deep learning model.
     '''
-    
+
     # Implement the code to predict the class from an image file
-    
+
     image = torch.FloatTensor([process_image(Image.open(image_path))])
     model.eval()
     output = model.forward(Variable(image))
     pobabilities = torch.exp(output).data.numpy()[0]
-    
 
-    top_idx = np.argsort(pobabilities)[-topk:][::-1] 
+    top_idx = np.argsort(pobabilities)[-topk:][::-1]
     top_class = [idx_to_class[x] for x in top_idx]
     top_probability = pobabilities[top_idx]
 
     return top_probability, top_class
 
-print (predict('b_cancer_data2/valid/MALIGNANT/SOB_M_DC-14-2985-200-007.png', loaded_model))
+
+print("predict",
+      predict(data_dir + '/valid/MALIGNANT/SOB_M_PC-15-190EF-100-016.png',
+              loaded_model))
 
 """# Sanity Checking
 
 Now that you can use a trained model for predictions, check to make sure it makes sense. Even if the validation accuracy is high, it's always good to check that there aren't obvious bugs. Use `matplotlib` to plot the probabilities for the top 5 classes as a bar graph, along with the input image. It should look like this:
 """
 
-# Display an image along with the top 2 classes
-def view_classify(img, probabilities, classes, mapper):
-    ''' Function for viewing an image and it's predicted classes.
-    '''
-    img_filename = img.split('/')[-2]
-    img = Image.open(img)
-
-    fig, (ax1, ax2) = plt.subplots(figsize=(6,10), ncols=1, nrows=2)
-    cancer_type = mapper[img_filename]
-    
-    ax1.set_title(cancer_type)
-    ax1.imshow(img)
-    ax1.axis('off')
-    
-    y_pos = np.arange(len(probabilities))
-    ax2.barh(y_pos, probabilities)
-    ax2.set_yticks(y_pos)
-    ax2.set_yticklabels([mapper[x] for x in classes])
-    ax2.invert_yaxis()
-
-img = 'b_cancer_data2/valid/MALIGNANT/SOB_M_DC-14-2985-200-007.png'
-p, c = predict(img, loaded_model)
-view_classify(img, p, c, cat_to_name)
-
-img = 'b_cancer_data2/valid/MALIGNANT/SOB_M_PC-14-12465-400-013.png'
-p, c = predict(img, loaded_model)
-view_classify(img, p, c, cat_to_name)
-
-img = 'b_cancer_data2/valid/BENIGN/SOB_B_A-14-22549AB-400-005.png'
-p, c = predict(img, loaded_model)
-view_classify(img, p, c, cat_to_name)
-
-"""# CONCLUSIONS
-
-The model can be improved if you change some hyperparameters. You can try using a different pretrained model. It's up to you. Let us know if you can improve the accuracy!
-"""
